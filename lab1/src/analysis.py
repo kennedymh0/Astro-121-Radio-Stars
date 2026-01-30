@@ -145,6 +145,33 @@ def compute_snr_v_averaging(data_blocks):
     results = {'navg': n_avg_list[:len(snr_values)],
                'snr': snr_values,
                'freqs': freqs,
-               'averaged_spectra': [np.mean(all_spectra[:n], axis=0) 
+               'averaged_spectra': [np.mean(all_spectra[:n], axis=0)
+                                    for n in n_avg_list[:len(snr_values)]]
+    }
+
+    return results
+
+
+def find_fwhm(x, y):
+    """
+ full width at half maximum
+    """
+    peak_idx = np.argmax(y)
+    peak_val = y[peak_idx]
+    half_max = peak_val / 2
+    
+    # points closest to half maximum
+    left_idx = np.where(y[:peak_idx] <= half_max)[0]
+    right_idx = np.where(y[peak_idx:] <= half_max)[0]
+    
+    if len(left_idx) > 0 and len(right_idx) > 0:
+        left_x = x[left_idx[-1]]
+        right_x = x[peak_idx + right_idx[0]]
+        fwhm = right_x - left_x
+    else:
+        fwhm = np.nan
+    
+    return fwhm
+                                    
                                     
                                
