@@ -15,12 +15,29 @@ nyquist_files = [
     '../data/nyquist/filtered_f100000_sr3200000.npz',
 ]
 
+# Load and verify data structure
 nyquist_data = {}
 for file in nyquist_files:
     loaded = np.load(file)
     sr = loaded['sample_rate']
+    data = loaded['data']
+    
+    # SAFETY: Ensure data is 1D
+    print(f"\nLoading {file}")
+    print(f"  Original data shape: {data.shape}")
+    
+    if data.ndim > 1:
+        print(f"  WARNING: Data is {data.ndim}D, converting to 1D")
+        data = data.squeeze()  # Remove singleton dimensions
+        
+    if data.ndim > 1:
+        print(f"  Still {data.ndim}D after squeeze, taking first row")
+        data = data[0]
+    
+    print(f"  Final data shape: {data.shape} ✓")
+    
     nyquist_data[file] = {
-        'data': loaded['data'],
+        'data': data,
         'signal_freq': loaded['signal_freq'],
         'sample_rate': sr
     }
@@ -40,9 +57,31 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
     sr = ds['sample_rate']
     nyquist = sr / 2
     
+    # Ensure 1D (redundant but safe)
+    if data.ndim > 1:
+        data = data.flatten()
+    
+    print(f"\nProcessing row {row_idx}:")
+    print(f"  Data length: {len(data)}")
+    
     # Compute power spectrum
-    freqs, power = analysis.compute_power_spectrum(data, sr, method='fft')
-    measured_freq = abs(freqs[np.argmax(power)])
+    try:
+        freqs, power = analysis.compute_power_spectrum(data, sr, method='fft')
+        print(f"  Freqs length: {len(freqs)}")
+        print(f"  Power length: {len(power)}")
+        
+        # Verify match
+        if len(freqs) != len(power):
+            raise ValueError(f"Length mismatch: freqs={len(freqs)}, power={len(power)}")
+        
+        # Find peak safely
+        peak_idx = np.argmax(power)
+        measured_freq = abs(freqs[peak_idx])
+        print(f"  Peak index: {peak_idx}, Measured freq: {measured_freq/1e3:.1f} kHz ✓")
+        
+    except Exception as e:
+        print(f"  ERROR: {e}")
+        raise
     
     # Determine if aliasing occurs
     is_aliasing = signal_freq > nyquist
@@ -55,28 +94,21 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
         status_color = 'green'
     
     # =================================================================
-    # COLUMN 0: TIME SERIES (Sine Wave)
+    # COLUMN 0: TIME SERIES
     # =================================================================
     ax_time = fig.add_subplot(gs[row_idx, 0])
     
-    # Time array
     t = np.arange(len(data)) / sr * 1e6  # microseconds
-    
-    # Plot first portion to see waveform clearly
     n_display = min(1000, len(data))
     ax_time.plot(t[:n_display], data[:n_display], 
                 linewidth=1.2, color='darkblue', alpha=0.8)
     
-    # Formatting
     ax_time.set_ylabel('Amplitude (ADC units)', fontsize=10)
     ax_time.grid(True, alpha=0.3)
     ax_time.set_xlim([0, t[n_display-1]])
-    
-    # Title with sampling rate
     ax_time.set_title(f'Sampled Waveform\n$f_s$ = {sr/1e6:.1f} MHz', 
                      fontsize=11, fontweight='bold')
     
-    # Info box
     info_text = (f'True freq: {signal_freq/1e3:.0f} kHz\n'
                 f'Nyquist: {nyquist/1e3:.0f} kHz\n'
                 f'Measured: {measured_freq/1e3:.0f} kHz')
@@ -94,43 +126,31 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
     # =================================================================
     ax_spec = fig.add_subplot(gs[row_idx, 1])
     
-    # Plot spectrum
     ax_spec.semilogy(freqs/1e3, power, linewidth=1, color='navy', alpha=0.8)
     
     # Shade Nyquist zones
-    # 1st Nyquist zone: [-fs/2, fs/2] (GREEN - safe zone)
     ax_spec.axvspan(-nyquist/1e3, nyquist/1e3, alpha=0.12, color='green',
                    label='1st Nyquist zone', zorder=0)
-    
-    # 2nd Nyquist zones: [fs/2, fs] and [-fs, -fs/2] (YELLOW - will alias)
     ax_spec.axvspan(nyquist/1e3, sr/1e3, alpha=0.12, color='yellow',
                    label='2nd Nyquist zone', zorder=0)
     ax_spec.axvspan(-sr/1e3, -nyquist/1e3, alpha=0.12, color='yellow', zorder=0)
     
-    # Draw Nyquist boundaries
+    # Draw boundaries
     ax_spec.axvline(nyquist/1e3, color='green', linestyle=':', 
                    linewidth=2, alpha=0.7, label=f'Nyquist: ±{nyquist/1e3:.0f} kHz')
     ax_spec.axvline(-nyquist/1e3, color='green', linestyle=':', 
                    linewidth=2, alpha=0.7)
     
-    # Draw sampling rate boundaries (edges of observable range)
-    ax_spec.axvline(sr/1e3, color='orange', linestyle=':', 
-                   linewidth=1.5, alpha=0.4)
-    ax_spec.axvline(-sr/1e3, color='orange', linestyle=':', 
-                   linewidth=1.5, alpha=0.4)
-    
-    # Mark TRUE signal frequency
+    # Mark frequencies
     ax_spec.axvline(signal_freq/1e3, color='red', linestyle='--', 
                    linewidth=2.5, alpha=0.85,
                    label=f'True signal: {signal_freq/1e3:.0f} kHz')
     
-    # If aliasing, mark the ALIASED frequency
     if is_aliasing:
         ax_spec.axvline(aliased_freq/1e3, color='darkorange', linestyle='-.', 
                        linewidth=2.5, alpha=0.85,
                        label=f'Appears at: {aliased_freq/1e3:.0f} kHz')
     
-    # Formatting
     ax_spec.set_ylabel('Power (arb)', fontsize=10)
     ax_spec.set_title(f'Power Spectrum with Nyquist Zones\n{status}', 
                      fontsize=11, fontweight='bold', color=status_color)
@@ -138,7 +158,6 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
     ax_spec.grid(True, alpha=0.3)
     ax_spec.set_xlim([-sr/2/1e3*1.15, sr/2/1e3*1.15])
     
-    # Set reasonable y-limits
     power_positive = power[power > 0]
     if len(power_positive) > 0:
         ax_spec.set_ylim([power_positive.min() * 0.5, power.max() * 5])
@@ -147,34 +166,28 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
         ax_spec.set_xlabel('Frequency (kHz)', fontsize=10)
     
     # =================================================================
-    # COLUMN 2: ZOOMED SPECTRUM (around peak)
+    # COLUMN 2: ZOOMED SPECTRUM
     # =================================================================
     ax_zoom = fig.add_subplot(gs[row_idx, 2])
     
-    # Find peak and create zoom window
-    peak_idx = np.argmax(power)
     peak_freq = freqs[peak_idx]
-    zoom_range = max(100e3, sr/20)  # Adaptive zoom range
+    zoom_range = max(100e3, sr/20)
     
     mask = (freqs > peak_freq - zoom_range) & (freqs < peak_freq + zoom_range)
     
-    # Plot zoomed spectrum
     ax_zoom.plot(freqs[mask]/1e3, power[mask], 
                 linewidth=2, color='darkblue', marker='o', 
                 markersize=2, alpha=0.7)
     
-    # Mark the measured peak
     ax_zoom.axvline(peak_freq/1e3, color='blue', linestyle='-', 
                    linewidth=2, alpha=0.6, 
                    label=f'Measured: {abs(peak_freq)/1e3:.1f} kHz')
     
-    # Mark expected frequency
     if is_aliasing:
         expected = aliased_freq
         ax_zoom.axvline(expected/1e3, color='darkorange', linestyle='--', 
                        linewidth=2, alpha=0.7, 
                        label=f'Expected (aliased): {expected/1e3:.1f} kHz')
-        # Show original frequency as reference
         ax_zoom.text(0.5, 0.95, 
                     f'Original: {signal_freq/1e3:.0f} kHz\n(above Nyquist)',
                     transform=ax_zoom.transAxes, ha='center', va='top',
@@ -186,14 +199,12 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
                        linewidth=2, alpha=0.7, 
                        label=f'Expected: {expected/1e3:.1f} kHz')
     
-    # Formatting
     ax_zoom.set_ylabel('Power (arb)', fontsize=10)
     ax_zoom.set_title(f'Zoomed Spectrum\n(±{zoom_range/1e3:.0f} kHz around peak)', 
                      fontsize=11, fontweight='bold')
     ax_zoom.legend(loc='upper right', fontsize=8)
     ax_zoom.grid(True, alpha=0.3)
     
-    # Calculate and display error
     error = abs(measured_freq - expected) / expected * 100
     ax_zoom.text(0.02, 0.05, f'Error: {error:.2f}%',
                 transform=ax_zoom.transAxes, fontsize=9,
@@ -202,13 +213,9 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
     if row_idx == n_datasets - 1:
         ax_zoom.set_xlabel('Frequency (kHz)', fontsize=10)
 
-# Overall title
 fig.suptitle('Nyquist Sampling Theorem: Complete Demonstration\n'
              f'Signal: {signal_freq/1e3:.0f} kHz sine wave at various sampling rates', 
              fontsize=15, fontweight='bold', y=0.998)
 
 plt.savefig('../data/nyquist_complete_combined.png', dpi=300, bbox_inches='tight')
 plt.show()
-
-
-
