@@ -8,10 +8,9 @@ from src import plotting_stuff, analysis, acquiring_data
 plotting_stuff.setup_plot_style()
 
 nyquist_files = [
-    '../data/nyquist/filtered_f100000_sr1000000.npz',
-    '../data/nyquist/filtered_f100000_sr2000000.npz',
-    '../data/nyquist/filtered_f100000_sr2400000.npz',
-    '../data/nyquist/filtered_f100000_sr3200000.npz',
+    '../data/nyquist/bypassed_f1000000_sr2000000.npz',
+    '../data/nyquist/bypassed_f1000000_sr2400000.npz',
+    '../data/nyquist/bypassed_f1000000_sr3200000.npz'
 ]
 
 nyquist_data = {}
@@ -53,7 +52,7 @@ for ax, (sr, ds) in zip(axes, nyquist_data.items()):
         aliased_freq = haha - signal_freq
         ax.axvline(aliased_freq/1e3, color='orange', linestyle='-.', 
                    linewidth=2, label=f'Aliased: {aliased_freq/1e3:.0f} kHz')
-        status = f"Aliasing! Appears at {aliased_freq/1e3:.0f} kHz"
+        status = f"Aliasing appears at {aliased_freq/1e3:.0f} kHz"
     
     ax.set_ylabel('Power (arb)')
     ax.set_title(f'$f_s$ = {haha/1e6:.1f} MHz — {status}')
@@ -65,4 +64,18 @@ axes[-1].set_xlabel('Frequency (kHz)')
 plt.tight_layout()
 plt.savefig('../data/test.png', dpi=300, bbox_inches='tight')
 plt.show()
+
+for i in nyquist_data.keys():
+    samp_rate = nyquist_data.get(i).get('sample_rate')
+    dt = nyquist_data.get(i).get('data')
+    t = np.arange(len(dt)) / samp_rate
+    plt.figure(figsize=(10,4))
+    plt.plot(t*1e6, dt)
+    plt.xlabel("Time (microseconds)")
+    plt.ylabel("Amplitude")
+    plt.title("Time-Domain RF Signal (~10MHz)")
+    plt.grid(True)
+    plt.show()
+    
+
 

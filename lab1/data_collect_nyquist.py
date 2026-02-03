@@ -10,9 +10,9 @@ sys.path.insert(0, '../src')
 from src.acquiring_data import capture_sine_wave, save_data
 
 def main():
-    sample_rates = [1.0e6, 2.0e6, 2.4e6, 3.2e6] #can also change this 
+    sample_rates = [1.0e6*i for i in range(1, 3.2, 0.1)] #can also change this 
     signal_freq = 100e4  # 1000 kHz; change here for different data 
-    nsamples = 16384 #this too maybe
+    nsamples = 2048 #this too maybe
     
     print("="*60)
     print("NYQUIST SAMPLING DATA COLLECTION")
