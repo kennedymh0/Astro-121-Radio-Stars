@@ -7,7 +7,7 @@ import numpy as np
 import sys
 sys.path.insert(0, '../src')
 
-from radiolab.acquiring_data import capture_sine_wave, save_data
+from src.acquiring_data import capture_sine_wave, save_data
 
 def main():
     sample_rates = [1.0e6, 2.0e6, 2.4e6, 3.2e6] #can also change this 

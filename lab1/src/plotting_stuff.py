@@ -51,13 +51,13 @@ def plot_spectrum(freqs, power, title='Power Spectrum',
         ax.plot(freqs/1e3, power, linewidth=0.8)
     
     if signal_freq is not None:
-        ax.axvline(signal_freq/1e3, color='r', linestyle='--', 
+        ax.axvline(signal_freq/1e3, color='viridis', linestyle='--', 
                   linewidth=2, label=f'Signal: {signal_freq/1e3:.1f} kHz')
     
     if nyquist_freq is not None:
-        ax.axvline(nyquist_freq/1e3, color='g', linestyle=':', 
+        ax.axvline(nyquist_freq/1e3, color='plasma', linestyle=':', 
                   linewidth=2, label=f'Nyquist: {nyquist_freq/1e3:.1f} kHz')
-        ax.axvline(-nyquist_freq/1e3, color='g', linestyle=':', 
+        ax.axvline(-nyquist_freq/1e3, color='plasma', linestyle=':', 
                   linewidth=2)
     
     ax.set_xlabel('Frequency (kHz)')

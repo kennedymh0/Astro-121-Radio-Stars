@@ -81,7 +81,7 @@ def fourier_filter(data, sample_rate, freq_range_to_zero):
     
     #filter mask
     f_low, f_high = freq_range_to_zero
-    mask = (np.abs(freqs) < f_low) | np.abs(freqs)>f_high)
+    mask = (np.abs(freqs) < f_low) | (np.abs(freqs)>f_high)
     
     spectrum_filtered = spectrum * mask
     
@@ -93,9 +93,9 @@ def analyze_noise_stats(data):
     '''
     stats = {'mean': np.mean(data), 
              'std': np.std(data),
-             'variance': np.var(data)
-             'min': np.min(data)
-             'max': np.max(data)
+             'variance': np.var(data),
+             'min': np.min(data),
+             'max': np.max(data),
              'rms': np.sqrt(np.mean(data**2))}
     return stats
 
@@ -109,7 +109,7 @@ def fit_gaussian(data, bins=50):
     
     mean = np.mean(data)
     std = np.std(data)
-    gaussian_fit = (1/ (std * np.sqrt(2*np.pi))) * \ np.exp(-0.5 * ((bin_centers - mean) / std)**2)
+    gaussian_fit = (1/ (std * np.sqrt(2*np.pi))) * np.exp(-0.5 * ((bin_centers - mean) / std)**2)
     
     return hist, bin_centers, gaussian_fit
 

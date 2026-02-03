@@ -22,11 +22,11 @@ def capture_sine_wave(signal_freq, sample_rate=2.4e6, nsamples=16384, bypass_fil
     '''
     
     if bypass_filter:
-        sdr = SDR(device_index=0, direct=direct_sampling, sample_rate=sample_rate, gain=0, fir_coeffs = fir_coeff)
+        sdr = ugradio.sdr.SDR(device_index=0, direct=direct_sampling, sample_rate=sample_rate, gain=0, fir_coeffs = fir_coeff)
         filter_status = "bypassed"
         
     else: 
-        sdr = SDR(device_index=0, direct=direct_sampling, sample_rate=sample_rate, gain=0)
+        sdr = ugradio.sdr.SDR(device_index=0, direct=direct_sampling, sample_rate=sample_rate, gain=0)
         filter_status = "filter is on"
         
     print(f"Capturing: {signal_freq/1e3:.1f} kHz at {sample_rate/1e6:.2f} MHz")
@@ -53,14 +53,14 @@ def capture_ng(sample_rate=2.4e6, nsamples=16384, nblocks=1):
              metadata = capture parameters
     '''
     
-    sdr = SDR(device_index=0, direct=direct_sampling, sample_rate=sample_rate, gain=0)
+    sdr = ugradio.sdr.SDR(device_index=0, direct=direct_sampling, sample_rate=sample_rate, gain=0)
     print(f"Capturing data: {nblocks} blocks of {nsamples} samples")
     first_capture = sdr.capture_data(nsamples=nsamples, nblocks=1)
     data = sdr.capture_data(nsamples=nsamples, nblocks=1)
     sdr.close()
     
-    metadata = {'sample_rate': sample_rate, 'nsamples': nsamples, 'nblocks': nblocks
-                'direct_sampling': True, 'timestamp': datetime.now().isoformat()}
+    metadata = {'sample_rate': sample_rate, 'nsamples': nsamples, 'nblocks': nblocks,
+                'direct_sampling': True,  'timestamp': datetime.now().isoformat()}
     return data, metadata
 
 
@@ -73,20 +73,20 @@ def capture_iq_mixer(sample_rate=2.4e6, nsamples=16384, lo_freq=10e6):
     returns: data = complex I/Q times series 
              metadata = capture parameters
     '''
-    sdr = SDR(device_index=0, direct=False, center_freq=lo_freq, sample_rate=sample_rate, gain=0)
+    sdr = ugradio.sdr.SDR(device_index=0, direct=False, center_freq=lo_freq, sample_rate=sample_rate, gain=0)
     print(f"Capturing I/Q data: LO = {lo_freq/1e6:.2f} MHz")
     first_capture = sdr.capture_data(nsamples=nsamples, nblocks=1)
     data = sdr.capture_data(nsamples=nsamples, nblocks=1)
     sdr.close()
     
     #combining I and Q to make complex array
-     if data.ndim == 2:
-            complex_data = data[:,0] + 1j * data[:,1]
-        else: 
-            complex_data = data
+    if data.ndim == 2:
+        complex_data = data[:,0] + 1j * data[:,1]
+    else: 
+        complex_data = data
     
-    metadata = {'sample_rate': sample_rate, 'nsamples': nsamples, 'lo_freq': lo_freq
-                'direct_sampling': False, 'timestamp': datetime.now().isoformat()}
+    metadata = {'sample_rate': sample_rate, 'nsamples': nsamples, 'lo_freq': lo_freq,
+                'direct_sampling':False, 'timestamp': datetime.now().isoformat()}
     return data, metadata
 
 
@@ -94,6 +94,6 @@ def save_data(data, metadata, filename):
     '''
     paramters: data=array, metadata=dictionary, filename=output filename
     '''
-    Path(filename).parent.mkdir(Parents=True, exist_ok=True)
+    Path(filename).parent.mkdir(parents=True, exist_ok=True)
     np.savez(filename, data=data, **metadata)
     print(f"Saved: {filename}")
