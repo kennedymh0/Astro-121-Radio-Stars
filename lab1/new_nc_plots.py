@@ -47,7 +47,7 @@ for file in nyquist_files:
 
 n_datasets = len(nyquist_data)
 fig = plt.figure(figsize=(18, 4*n_datasets))
-gs = fig.add_gridspec(n_datasets, 3, hspace=0.35, wspace=0.35)
+gs = fig.add_gridspec(n_datasets, 2, hspace=0.35, wspace=0.35)
 
 for row_idx, (file, ds) in enumerate(nyquist_data.items()):
     # Extract data
@@ -168,7 +168,7 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
                        label=f'Appears at: {aliased_freq/1e3:.0f} kHz')
     
     ax_spec.set_ylabel('Power (arb)', fontsize=10)
-    ax_spec.set_title(f'Power Spectrum with Nyquist Zones\n{status}', 
+    ax_spec.set_title(f'Volatge Spectrum with Nyquist Zones\n{status}', 
                      fontsize=11, fontweight='bold', color=status_color)
     ax_spec.legend(loc='upper right', fontsize=8, framealpha=0.9)
     ax_spec.grid(True, alpha=0.3)
@@ -180,53 +180,6 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
     
     if row_idx == n_datasets - 1:
         ax_spec.set_xlabel('Frequency (kHz)', fontsize=10)
-
-    # =================================================================
-    # COLUMN 2:voltage spectra with Nyquist Zones
-    # =================================================================        
-    ax_spec = fig.add_subplot(gs[row_idx, 2])
-    
-    ax_spec.semilogy(freqs/1e3, voltage, linewidth=1, color='navy', alpha=0.8)
-    
-    # Shade Nyquist zones
-    ax_spec.axvspan(-nyquist/1e3, nyquist/1e3, alpha=0.12, color='green',
-                   label='1st Nyquist zone', zorder=0)
-    ax_spec.axvspan(nyquist/1e3, sr/1e3, alpha=0.12, color='yellow',
-                   label='2nd Nyquist zone', zorder=0)
-    ax_spec.axvspan(-sr/1e3, -nyquist/1e3, alpha=0.12, color='yellow', zorder=0)
-    
-    # Draw boundaries
-    ax_spec.axvline(nyquist/1e3, color='green', linestyle=':', 
-                   linewidth=2, alpha=0.7, label=f'Nyquist: ±{nyquist/1e3:.0f} kHz')
-    ax_spec.axvline(-nyquist/1e3, color='green', linestyle=':', 
-                   linewidth=2, alpha=0.7)
-    
-    # Mark frequencies
-    ax_spec.axvline(signal_freq/1e3, color='red', linestyle='--', 
-                   linewidth=2.5, alpha=0.85,
-                   label=f'True signal: {signal_freq/1e3:.0f} kHz')
-    
-    if is_aliasing:
-        ax_spec.axvline(aliased_freq/1e3, color='darkorange', linestyle='-.', 
-                       linewidth=2.5, alpha=0.85,
-                       label=f'Appears at: {aliased_freq/1e3:.0f} kHz')
-    
-    ax_spec.set_ylabel('Voltage (mV)', fontsize=10)
-    ax_spec.set_title(f'Voltage Spectrum with Nyquist Zones\n{status}', 
-                     fontsize=11, fontweight='bold', color=status_color)
-    ax_spec.legend(loc='upper right', fontsize=8, framealpha=0.9)
-    ax_spec.grid(True, alpha=0.3)
-    ax_spec.set_xlim([-sr/2/1e3*1.15, sr/2/1e3*1.15])
-    
-    voltage_positive = voltage[voltage > 0]
-    if len(voltage_positive) > 0:
-        ax_spec.set_ylim([voltage_positive.min() * 0.5, voltage.max() * 5])
-    
-    if row_idx == n_datasets - 1:
-        ax_spec.set_xlabel('Frequency (kHz)', fontsize=10)
-
-    
-    
 
 fig.suptitle('Nyquist Sampling \n'
              f'Signal: {signal_freq/1e3:.0f} kHz sine wave at various sampling rates', 
