@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal, stats
@@ -8,17 +9,15 @@ from src import plotting_stuff, analysis, acquiring_data
 plotting_stuff.setup_plot_style()
 
 # Load data
-nyquist_files = [
-    '../data/nyquist/filtered_f100000_sr1000000.npz',
-    '../data/nyquist/filtered_f100000_sr2000000.npz',
-    '../data/nyquist/filtered_f100000_sr2400000.npz',
-    '../data/nyquist/filtered_f100000_sr3200000.npz',
-]
+path = "/home/radiopi/Astro-121-Radio-Stars/lab1/test_20260203_164946"
+nyquist_files = os.listdir(path)
+
 
 # Load and verify data structure
 nyquist_data = {}
 for file in nyquist_files:
-    loaded = np.load(file)
+    loaded = np.load(os.path.join(path, file))
+
     sr = loaded['sample_rate']
     data = loaded['data']
     
@@ -77,12 +76,29 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
         # Find peak safely
         peak_idx = np.argmax(power)
         measured_freq = abs(freqs[peak_idx])
-        print(f"  Peak index: {peak_idx}, Measured freq: {measured_freq/1e3:.1f} kHz ✓")
+        print(f"  Peak index: {peak_idx}, Measured freq: {measured_freq/1e3:.4f} kHz ✓")
         
     except Exception as e:
         print(f"  ERROR: {e}")
         raise
-    
+    # compute voltage spectra
+    try:
+        freqs, voltage = analysis.compute_voltage_spectra(data, sr)
+        print(f"  Freqs length: {len(freqs)}")
+        print(f"  Voltage length: {len(voltage)}")
+        
+        # Verify match
+        if len(freqs) != len(voltage):
+            raise ValueError(f"Length mismatch: freqs={len(freqs)}, power={len(voltage)}")
+        
+        # Find peak safely
+        peak_idx = np.argmax(voltage)
+        measured_freq = abs(freqs[peak_idx])
+        print(f"  Peak index: {peak_idx}, Measured freq: {measured_freq/1e3:.4f} kHz ✓")
+        
+    except Exception as e:
+        print(f"  ERROR: {e}")
+        raise
     # Determine if aliasing occurs
     is_aliasing = signal_freq > nyquist
     if is_aliasing:
@@ -98,12 +114,12 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
     # =================================================================
     ax_time = fig.add_subplot(gs[row_idx, 0])
     
-    t = np.arange(len(data)) / sr * 1e6  # microseconds
-    n_display = min(1000, len(data))
+    t = np.arange(len(data)) / sr * 1e3  # microseconds
+    n_display = min(25, len(data))
     ax_time.plot(t[:n_display], data[:n_display], 
                 linewidth=1.2, color='darkblue', alpha=0.8)
     
-    ax_time.set_ylabel('Amplitude (ADC units)', fontsize=10)
+    ax_time.set_ylabel('Amplitude', fontsize=10)
     ax_time.grid(True, alpha=0.3)
     ax_time.set_xlim([0, t[n_display-1]])
     ax_time.set_title(f'Sampled Waveform\n$f_s$ = {sr/1e6:.1f} MHz', 
@@ -111,7 +127,7 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
     
     info_text = (f'True freq: {signal_freq/1e3:.0f} kHz\n'
                 f'Nyquist: {nyquist/1e3:.0f} kHz\n'
-                f'Measured: {measured_freq/1e3:.0f} kHz')
+                f'Measured: {measured_freq/1e3:.4f} kHz')
     ax_time.text(0.98, 0.97, info_text,
                 transform=ax_time.transAxes,
                 fontsize=9, verticalalignment='top',
@@ -156,7 +172,7 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
                      fontsize=11, fontweight='bold', color=status_color)
     ax_spec.legend(loc='upper right', fontsize=8, framealpha=0.9)
     ax_spec.grid(True, alpha=0.3)
-    ax_spec.set_xlim([-sr/2/1e3*1.15, sr/2/1e3*1.15])
+    ax_spec.set_xlim([0, sr/2/1e3*1.15])
     
     power_positive = power[power > 0]
     if len(power_positive) > 0:
@@ -164,56 +180,55 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
     
     if row_idx == n_datasets - 1:
         ax_spec.set_xlabel('Frequency (kHz)', fontsize=10)
-    
+
     # =================================================================
-    # COLUMN 2: ZOOMED SPECTRUM
-    # =================================================================
-    ax_zoom = fig.add_subplot(gs[row_idx, 2])
+    # COLUMN 2:voltage spectra with Nyquist Zones
+    # =================================================================        
+    ax_spec = fig.add_subplot(gs[row_idx, 2])
     
-    peak_freq = freqs[peak_idx]
-    zoom_range = max(100e3, sr/20)
+    ax_spec.semilogy(freqs/1e3, voltage, linewidth=1, color='navy', alpha=0.8)
     
-    mask = (freqs > peak_freq - zoom_range) & (freqs < peak_freq + zoom_range)
+    # Shade Nyquist zones
+    ax_spec.axvspan(-nyquist/1e3, nyquist/1e3, alpha=0.12, color='green',
+                   label='1st Nyquist zone', zorder=0)
+    ax_spec.axvspan(nyquist/1e3, sr/1e3, alpha=0.12, color='yellow',
+                   label='2nd Nyquist zone', zorder=0)
+    ax_spec.axvspan(-sr/1e3, -nyquist/1e3, alpha=0.12, color='yellow', zorder=0)
     
-    ax_zoom.plot(freqs[mask]/1e3, power[mask], 
-                linewidth=2, color='darkblue', marker='o', 
-                markersize=2, alpha=0.7)
+    # Draw boundaries
+    ax_spec.axvline(nyquist/1e3, color='green', linestyle=':', 
+                   linewidth=2, alpha=0.7, label=f'Nyquist: ±{nyquist/1e3:.0f} kHz')
+    ax_spec.axvline(-nyquist/1e3, color='green', linestyle=':', 
+                   linewidth=2, alpha=0.7)
     
-    ax_zoom.axvline(peak_freq/1e3, color='blue', linestyle='-', 
-                   linewidth=2, alpha=0.6, 
-                   label=f'Measured: {abs(peak_freq)/1e3:.1f} kHz')
+    # Mark frequencies
+    ax_spec.axvline(signal_freq/1e3, color='red', linestyle='--', 
+                   linewidth=2.5, alpha=0.85,
+                   label=f'True signal: {signal_freq/1e3:.0f} kHz')
     
     if is_aliasing:
-        expected = aliased_freq
-        ax_zoom.axvline(expected/1e3, color='darkorange', linestyle='--', 
-                       linewidth=2, alpha=0.7, 
-                       label=f'Expected (aliased): {expected/1e3:.1f} kHz')
-        ax_zoom.text(0.5, 0.95, 
-                    f'Original: {signal_freq/1e3:.0f} kHz\n(above Nyquist)',
-                    transform=ax_zoom.transAxes, ha='center', va='top',
-                    fontsize=8, color='red',
-                    bbox=dict(boxstyle='round', facecolor='pink', alpha=0.7))
-    else:
-        expected = signal_freq
-        ax_zoom.axvline(expected/1e3, color='red', linestyle='--', 
-                       linewidth=2, alpha=0.7, 
-                       label=f'Expected: {expected/1e3:.1f} kHz')
+        ax_spec.axvline(aliased_freq/1e3, color='darkorange', linestyle='-.', 
+                       linewidth=2.5, alpha=0.85,
+                       label=f'Appears at: {aliased_freq/1e3:.0f} kHz')
     
-    ax_zoom.set_ylabel('Power (arb)', fontsize=10)
-    ax_zoom.set_title(f'Zoomed Spectrum\n(±{zoom_range/1e3:.0f} kHz around peak)', 
-                     fontsize=11, fontweight='bold')
-    ax_zoom.legend(loc='upper right', fontsize=8)
-    ax_zoom.grid(True, alpha=0.3)
+    ax_spec.set_ylabel('Voltage (mV)', fontsize=10)
+    ax_spec.set_title(f'Voltage Spectrum with Nyquist Zones\n{status}', 
+                     fontsize=11, fontweight='bold', color=status_color)
+    ax_spec.legend(loc='upper right', fontsize=8, framealpha=0.9)
+    ax_spec.grid(True, alpha=0.3)
+    ax_spec.set_xlim([-sr/2/1e3*1.15, sr/2/1e3*1.15])
     
-    error = abs(measured_freq - expected) / expected * 100
-    ax_zoom.text(0.02, 0.05, f'Error: {error:.2f}%',
-                transform=ax_zoom.transAxes, fontsize=9,
-                bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.7))
+    voltage_positive = voltage[voltage > 0]
+    if len(voltage_positive) > 0:
+        ax_spec.set_ylim([voltage_positive.min() * 0.5, voltage.max() * 5])
     
     if row_idx == n_datasets - 1:
-        ax_zoom.set_xlabel('Frequency (kHz)', fontsize=10)
+        ax_spec.set_xlabel('Frequency (kHz)', fontsize=10)
 
-fig.suptitle('Nyquist Sampling Theorem: Complete Demonstration\n'
+    
+    
+
+fig.suptitle('Nyquist Sampling \n'
              f'Signal: {signal_freq/1e3:.0f} kHz sine wave at various sampling rates', 
              fontsize=15, fontweight='bold', y=0.998)
 

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal, stats
@@ -7,15 +8,15 @@ from src import plotting_stuff, analysis, acquiring_data
 
 plotting_stuff.setup_plot_style()
 
-nyquist_files = [
-    '../data/nyquist/bypassed_f1000000_sr2000000.npz',
-    '../data/nyquist/bypassed_f1000000_sr2400000.npz',
-    '../data/nyquist/bypassed_f1000000_sr3200000.npz'
-]
+key = "20260203_140125" # change to relevant test folder key
+cwd = os.getcwd()
+test_folder = f"test_{key}"
+path = os.path.join(cwd, test_folder)
+nyquist_files = os.listdir(path)
 
 nyquist_data = {}
 for file in nyquist_files:
-    loaded = np.load(file)
+    loaded = np.load(os.path.join(path, file))
     sr = loaded['sample_rate']
     nyquist_data[file] = {
         'data': loaded['data'],
@@ -23,6 +24,7 @@ for file in nyquist_files:
         'sample_rate': sr
     }
       
+
 
 fig, axes = plt.subplots(len(nyquist_data), 1, figsize=(12, 10), sharex=True)
 
@@ -65,17 +67,28 @@ plt.tight_layout()
 plt.savefig('../data/test.png', dpi=300, bbox_inches='tight')
 plt.show()
 
-for i in nyquist_data.keys():
-    samp_rate = nyquist_data.get(i).get('sample_rate')
-    dt = nyquist_data.get(i).get('data')
-    t = np.arange(len(dt)) / samp_rate
-    plt.figure(figsize=(10,4))
-    plt.plot(t*1e6, dt)
-    plt.xlabel("Time (microseconds)")
-    plt.ylabel("Amplitude")
-    plt.title("Time-Domain RF Signal (~10MHz)")
-    plt.grid(True)
-    plt.show()
+
+ncol = 3
+nrow = (len(nyquist_data) + 1) // 2
+fig, axes = plt.subplots(nrow, ncol, figsize=(10, 4*nrow), sharex=True)
     
+    
+for i, (k, v) in enumerate(nyquist_data.items()):
+    z = i%3 # modulo i to retrieve relevant column index
+    j = (i)//3
+    
+    s_r = v['sample_rate']
+    signal_freq = v['signal_freq']
+    data = v['data'][0]
+    nsamples = len(data)
+    t = np.arange(nsamples) / signal_freq
+    axes[j][z].plot(t[:100]*1e6, data[:100])
+    axes[j][z].set_title(f"{s_r:.2} MHz")
+    axes[j][z].set_xlabel(r"Time $\mu$")
+    axes[j][z].set_ylabel("Amplitude")
+    axes[j][z].grid(True)
+    
+plt.tight_layout()
+plt.show()
 
 

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import ugradio
 import ugradio.sdr
@@ -90,10 +91,9 @@ def capture_iq_mixer(sample_rate=2.4e6, nsamples=16384, lo_freq=10e6):
     return data, metadata
 
 
-def save_data(data, metadata, filename):
+def save_data(data, metadata, filename, directory):
     '''
     paramters: data=array, metadata=dictionary, filename=output filename
     '''
-    Path(filename).parent.mkdir(parents=True, exist_ok=True)
-    np.savez(filename, data=data, **metadata)
+    np.savez(os.path.join(directory, filename), data=data, **metadata)
     print(f"Saved: {filename}")

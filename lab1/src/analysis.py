@@ -31,16 +31,16 @@ def compute_power_spectrum(data, sample_rate, method='fft', freq_oversampling=1)
     else: 
         raise ValueError("choose either fft or dft")
         
-    power = np.abs(spectrum)**2
+    power = spectrum
     
     return freqs, power
 
 def compute_voltage_spectra(data, sample_rate): 
     N = len(data)
-    spectrum = np.fft.fft(data)
+    spectra = np.fft.fft(data)
     freqs = np.fft.fftfreq(N, d=1/sample_rate)    
     
-    spectrum = np.fft.fftshift(spectrum)
+    spectrum = np.sqrt(np.fft.fftshift(spectra))
     freqs = np.fft.fftshift(freqs)
     
     return freqs, spectrum 
