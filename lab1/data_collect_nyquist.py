@@ -20,8 +20,8 @@ def sci_filename(x, sig=3):
 .replace('-', 'm'))    
 
 def main():
-    sample_rates = [1e6] #can also change this 
-    signal_freq = 75e4  # 500 kHz; change here for different data 
+    sample_rates = [1.0e6, 1.5e6, 2.0e6, 2.5e6, 3.0e6] #can also change this 
+    signal_freq = 3e6  # 500 kHz; change here for different data 
     nsamples = 2048 #this too maybe
     
     print("="*60)
@@ -30,7 +30,7 @@ def main():
     print(f"Signal frequency: {signal_freq/1e3} kHz")
     print("\nSignal generator is set to:")
     print(f"  - Frequency: {signal_freq/1e3} kHz")
-    print(f"  - Amplitude: < 3 mVpp")
+    print(f"  - Amplitude: 10 mVpp")
     print("\nPress Enter when ready...")
     input()
     
