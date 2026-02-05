@@ -18,7 +18,7 @@ def sci_filename(x, sig=3):
 .replace('-', 'm'))      
 
 def main():
-    sample_rate = 3e6 #change
+    sample_rate = 3.5e6 #change
     nsamples = 16384 #change
     nblocks = 16 #change
     

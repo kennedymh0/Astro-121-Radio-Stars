@@ -56,7 +56,7 @@ def capture_ng(sample_rate=2.4e6, nsamples=16384, nblocks=1):
              metadata = capture parameters
     '''
     direct_sampling = True
-    sdr = ugradio.sdr.SDR(device_index=0, direct=direct_sampling, sample_rate=sample_rate, gain=.5)
+    sdr = ugradio.sdr.SDR(device_index=0, direct=direct_sampling, sample_rate=sample_rate, gain=0)
     print(f"Capturing data: {nblocks} blocks of {nsamples} samples")
     first_capture = sdr.capture_data(nsamples=nsamples, nblocks=nblocks)
     data = sdr.capture_data(nsamples=nsamples, nblocks=nblocks)

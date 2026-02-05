@@ -10,8 +10,8 @@ sys.path.insert(0, '../src')
 from src.acquiring_data import capture_sine_wave, save_data
 
 def main():
-    sample_rates = [1.0e6, 2.0e6, 2.4e6, 3.2e6] #can also change this 
-    signal_freq = 100e3  # 100 kHz; change here for different data 
+    sample_rates = [1.5e6, 2.0e6, 2.5e6, 3.0e6] #can also change this 
+    signal_freq = 75e4  # 100 kHz; change here for different data 
     nsamples = 16384 #this too maybe
     
     print("="*60)
@@ -20,7 +20,7 @@ def main():
     print(f"Signal frequency: {signal_freq/1e3} kHz")
     print("\nSignal generator is set to:")
     print(f"  - Frequency: {signal_freq/1e3} kHz")
-    print(f"  - Amplitude: < 3 mVpp")
+    print(f"  - Amplitude: 10 mVpp")
     print("\nPress Enter when ready...")
     input()
     
