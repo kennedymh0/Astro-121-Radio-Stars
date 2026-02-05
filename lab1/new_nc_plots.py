@@ -9,7 +9,7 @@ from src import plotting_stuff, analysis, acquiring_data
 plotting_stuff.setup_plot_style()
 
 # Load data
-path = "/home/radiopi/Astro-121-Radio-Stars/lab1/test_20260203_164946"
+path = "/home/radiopi/Astro-121-Radio-Stars/lab1/test_20260204_155612"
 nyquist_files = os.listdir(path)
 
 
@@ -168,7 +168,7 @@ for row_idx, (file, ds) in enumerate(nyquist_data.items()):
                        label=f'Appears at: {aliased_freq/1e3:.0f} kHz')
     
     ax_spec.set_ylabel('Power (arb)', fontsize=10)
-    ax_spec.set_title(f'Volatge Spectrum with Nyquist Zones\n{status}', 
+    ax_spec.set_title(f'Power Spectrum with Nyquist Zones\n{status}', 
                      fontsize=11, fontweight='bold', color=status_color)
     ax_spec.legend(loc='upper right', fontsize=8, framealpha=0.9)
     ax_spec.grid(True, alpha=0.3)

@@ -6,6 +6,8 @@ from pathlib import Path
 from datetime import datetime
 
 fir_coeff = np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2047])
+fir_coeff2 = np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2047])
+
 
 def capture_sine_wave(signal_freq, sample_rate=2.4e6, nsamples=16384, bypass_filter=False, direct_sampling=True):
     '''
@@ -53,15 +55,16 @@ def capture_ng(sample_rate=2.4e6, nsamples=16384, nblocks=1):
     returns: data = time series data
              metadata = capture parameters
     '''
-    
-    sdr = ugradio.sdr.SDR(device_index=0, direct=direct_sampling, sample_rate=sample_rate, gain=0)
+    direct_sampling = True
+    sdr = ugradio.sdr.SDR(device_index=0, direct=direct_sampling, sample_rate=sample_rate, gain=.5)
     print(f"Capturing data: {nblocks} blocks of {nsamples} samples")
-    first_capture = sdr.capture_data(nsamples=nsamples, nblocks=1)
-    data = sdr.capture_data(nsamples=nsamples, nblocks=1)
+    first_capture = sdr.capture_data(nsamples=nsamples, nblocks=nblocks)
+    data = sdr.capture_data(nsamples=nsamples, nblocks=nblocks)
     sdr.close()
     
     metadata = {'sample_rate': sample_rate, 'nsamples': nsamples, 'nblocks': nblocks,
                 'direct_sampling': True,  'timestamp': datetime.now().isoformat()}
+    print(np.unique(data[0]))
     return data, metadata
 
 
@@ -74,7 +77,7 @@ def capture_iq_mixer(sample_rate=2.4e6, nsamples=16384, lo_freq=10e6):
     returns: data = complex I/Q times series 
              metadata = capture parameters
     '''
-    sdr = ugradio.sdr.SDR(device_index=0, direct=False, center_freq=lo_freq, sample_rate=sample_rate, gain=0)
+    sdr = ugradio.sdr.SDR(device_index=0, direct=False, center_freq=lo_freq, sample_rate=sample_rate, gain=0, fir_coeffs=fir_coeff)
     print(f"Capturing I/Q data: LO = {lo_freq/1e6:.2f} MHz")
     first_capture = sdr.capture_data(nsamples=nsamples, nblocks=1)
     data = sdr.capture_data(nsamples=nsamples, nblocks=1)

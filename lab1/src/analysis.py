@@ -31,7 +31,7 @@ def compute_power_spectrum(data, sample_rate, method='fft', freq_oversampling=1)
     else: 
         raise ValueError("choose either fft or dft")
         
-    power = spectrum
+    power = np.abs(np.sqrt(spectrum))
     
     return freqs, power
 
