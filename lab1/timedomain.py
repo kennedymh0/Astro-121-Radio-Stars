@@ -8,7 +8,8 @@ from src import plotting_stuff, analysis, acquiring_data
 plotting_stuff.setup_plot_style()
 
 nyquist_files = [
-    '../data/nyquist/bypassed_f1000000_sr2000000.npz'
+    '/home/radiopi/Astro-121-Radio-Stars/lab1/test_md_radio_20260206_014212/mixer_sr2p400e06_lo_freq1p000e08_samples1p638e04_20260206_014215.npz',
+'/home/radiopi/Astro-121-Radio-Stars/lab1/test_md_radio_20260206_014212/mixer_sr2p400e06_lo_freq1p000e08_samples1p638e04_20260206_014241.npz'
 ]
 
 nyquist_data = {}
@@ -17,7 +18,6 @@ for file in nyquist_files:
     sr = loaded['sample_rate']
     nyquist_data[file] = {
         'data': loaded['data'],
-        'signal_freq': loaded['signal_freq'],
         'sample_rate': sr
     }
     
